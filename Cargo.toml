@@ -1,5 +1,5 @@
 [package]
-name = "ro-note"
+name = "jrnl"
 version = "0.1.0"
 edition = "2021"
 
