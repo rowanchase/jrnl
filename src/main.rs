@@ -61,6 +61,7 @@ fn open_date(_settings: &Option<Config>, year: i32, month: u32, day: u32) {
 
     let _ = Command::new("nvim")
         .args(["-c", &format!("cd {}", root), &file_path])
+        .args(["-c", ":set spell"])
         .spawn()
         .expect("failed to open today's note")
         .wait();
