@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::{fs::OpenOptions, process::Command};
 
 fn git_commit(_settings: &Option<Config>) {
-    let root = "/home/rowanchase/journal";
+    let root = "/home/rowan/journal";
     let _stage_all = Command::new("git")
         .args(["-C", root, "add", "."])
         .spawn()
@@ -39,7 +39,7 @@ fn git_commit(_settings: &Option<Config>) {
 
 fn open_date(_settings: &Option<Config>, year: i32, month: u32, day: u32) {
     // TODO: Root should come from config
-    let root = "/home/rowanchase/journal";
+    let root = "/home/rowan/journal";
     let dir_path = format!("{}/{}/{}", root, year, month);
     let file_path = format!("{}/{}.md", dir_path, day);
 
