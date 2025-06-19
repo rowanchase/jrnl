@@ -19,13 +19,7 @@ fn git_commit(_settings: &Option<Config>) {
     let t = Local::now();
 
     let _commit = Command::new("git")
-        .args([
-            "-C",
-            root,
-            "commit",
-            "-m",
-            &format!("{}", t),
-        ])
+        .args(["-C", root, "commit", "-m", &format!("{}", t)])
         .spawn()
         .expect("failed to stage changes")
         .wait();
@@ -33,7 +27,7 @@ fn git_commit(_settings: &Option<Config>) {
     let _push = Command::new("git")
         .args(["-C", root, "push", "--force"])
         .spawn()
-        .expect("failed to stage changes")
+        .expect("failed to push changes")
         .wait();
 }
 
