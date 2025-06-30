@@ -3,6 +3,7 @@ use chrono::Local;
 use chrono::NaiveDate;
 use clap::{Parser, Subcommand};
 use config::Config;
+use std::env::home_dir;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
@@ -31,17 +32,19 @@ fn git_commit(_settings: &Option<Config>) {
         .wait();
 }
 
-fn open_date(_settings: &Option<Config>, year: i32, month: u32, day: u32) {
+fn get_header(ns: Vec<String>) -> String {
+    let h = ns.join(".");
+    format!("# {}", h)
+}
+
+fn open(_settings: &Option<Config>, ns: Vec<String>, header: Option<String>) {
     // TODO: Root should come from config
-    let root = "/home/rowan/journal";
-    let dir_path = format!("{}/{}/{}", root, year, month);
-    let file_path = format!("{}/{}.md", dir_path, day);
+    let root = home_dir().unwrap().join("journal");
+    let (last, rest) = ns.split_last().expect("ns must be at least two deep");
+    let dir_path = rest.iter().fold(root.clone(), |acc, e| acc.join(e));
+    let file_path = dir_path.join(last);
 
     let _ = fs::create_dir_all(dir_path);
-
-    let date = NaiveDate::from_ymd_opt(year, month, day)
-        .expect("Not a valid date")
-        .format("%A %e %B %Y");
 
     // Ensure file
     let file = OpenOptions::new()
@@ -49,10 +52,12 @@ fn open_date(_settings: &Option<Config>, year: i32, month: u32, day: u32) {
         .create_new(true)
         .open(&file_path);
 
+    let ns_header = get_header(ns.clone());
+
     let _output = match file {
         Ok(mut f) => {
-            let date_header = format!("# {}", date);
-            f.write_all(date_header.as_bytes()).expect("Couldn't write");
+            let h = header.or(Some(ns_header)).expect("No header found");
+            f.write_all(h.as_bytes()).expect("Couldn't write");
         }
         Err(_err) => {
             // Already exists, do nothing
@@ -60,11 +65,27 @@ fn open_date(_settings: &Option<Config>, year: i32, month: u32, day: u32) {
     };
 
     let _ = Command::new("nvim")
-        .args(["-c", &format!("cd {}", root), &file_path])
+        .args([
+            "-c",
+            &format!("cd {}", root.to_str().unwrap()),
+            &file_path.to_str().unwrap(),
+        ])
         .args(["-c", ":set spell"])
         .spawn()
         .expect("failed to open today's note")
         .wait();
+}
+
+fn open_date(settings: &Option<Config>, year: i32, month: u32, day: u32) {
+    let date = NaiveDate::from_ymd_opt(year, month, day)
+        .expect("Not a valid date")
+        .format("%A %e %B %Y");
+    let header = format!("# {}", date);
+    open(
+        settings,
+        vec![year.to_string(), month.to_string(), day.to_string()],
+        Some(header),
+    );
 }
 
 fn open_today(settings: &Option<Config>) {
@@ -95,18 +116,15 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// does testing things
-    Test {
-        /// lists test values
-        #[arg(short, long)]
-        list: bool,
-    },
     /// Open notes for date
     Date {
         /// Open notes for date
         year: i32,
         month: u32,
         day: u32,
+    },
+    NS {
+        ns: Vec<String>,
     },
 }
 fn main() {
@@ -117,14 +135,8 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Test { list }) => {
-            if *list {
-                println!("Printing testing lists...");
-            } else {
-                println!("Not printing testing lists...");
-            }
-        }
         Some(Commands::Date { year, month, day }) => open_date(&settings, *year, *month, *day),
+        Some(Commands::NS { ns }) => open(&settings, ns.clone(), None),
         None => open_today(&settings),
     }
 
