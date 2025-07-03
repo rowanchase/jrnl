@@ -17,19 +17,19 @@ of your notes will always be "$HOME/journal/" and your editor will be neovim.
 
 `jrnl`
 
-This will create a note at $HOME/journal/{year}/{month}/{day}.md with the header eg. # Monday 30 June 2025
+This will create a note at $HOME/journal/{year}/{month}/{day}.md with the header eg. `# Monday 30 June 2025`
 
 ### Make a note for another date:
 
 `jrnl date 2025 6 30`
 
-This will create a note at $HOME/journal/2025/6/30.md with the header # Monday 30 June 2025
+This will create a note at $HOME/journal/2025/6/30.md with the header `# Monday 30 June 2025`
 
-### Make a namespace'd note
+### Make a namespace'd note:
 
 `jrnl ns pets dogs shepherds swiss`
 
-This will create a note at $HOME/journal/pets/dogs/shepherds/swiss.md with the header # pets.dogs.shepherds.swiss
+This will create a note at $HOME/journal/pets/dogs/shepherds/swiss.md with the header `# pets.dogs.shepherds.swiss`
 
 ## Complimentary tools
 
