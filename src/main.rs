@@ -37,7 +37,7 @@ fn open(_settings: &Option<Config>, ns: Vec<String>, header: Option<String>) {
     let root = home_dir().unwrap().join("journal");
     let (last, rest) = ns.split_last().expect("ns must be at least two deep");
     let dir_path = rest.iter().fold(root.clone(), |acc, e| acc.join(e));
-    let file_path = dir_path.join(last);
+    let file_path = dir_path.join(format!("{}.md", last));
 
     let _ = fs::create_dir_all(dir_path);
 
