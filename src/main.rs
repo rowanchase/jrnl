@@ -66,6 +66,7 @@ fn open(_settings: &Option<Config>, ns: Vec<String>, header: Option<String>) {
             &file_path.to_str().unwrap(),
         ])
         .args(["-c", ":set spell"])
+        .args(["-c", ":set wrap"])
         .spawn()
         .expect("failed to open today's note")
         .wait();
