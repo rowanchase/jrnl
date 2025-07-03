@@ -25,11 +25,6 @@ fn git_commit(_settings: &Option<Config>) {
         .expect("failed to commit changes")
         .wait();
 
-    let _push = Command::new("git")
-        .args(["-C", root, "push", "--force"])
-        .spawn()
-        .expect("failed to push changes")
-        .wait();
 }
 
 fn get_header(ns: Vec<String>) -> String {
