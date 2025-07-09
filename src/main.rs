@@ -13,7 +13,7 @@ use std::{fs::OpenOptions, process::Command};
 use xdg::BaseDirectories;
 
 fn get_root(config: &Config) -> String {
-    let profile: String = config.get("profile").expect("No profile found");
+    let profile: String = config.get("profile").unwrap_or(String::from("default"));
     let profile_conf: HashMap<String, String> =
         config.get(&profile).expect("Profile doesn't exist");
     profile_conf
