@@ -3,14 +3,34 @@ use chrono::Local;
 use chrono::NaiveDate;
 use clap::{Parser, Subcommand};
 use config::Config;
+use std::collections::HashMap;
 use std::env::home_dir;
 use std::fs;
+use std::hash::Hash;
 use std::io::Write;
+use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::{fs::OpenOptions, process::Command};
+use xdg::BaseDirectories;
 
-fn git_commit(_settings: &Option<Config>) {
-    let root = "/home/rowan/journal";
+fn get_root(config: &Config) -> String {
+    let profile: String = config.get("profile").expect("No profile found");
+    let profile_conf: HashMap<String, String> =
+        config.get(&profile).expect("Profile doesn't exist");
+    profile_conf
+        .get("root")
+        .expect("Profile has no root")
+        .clone()
+}
+
+fn get_root_path(config: &Config) -> PathBuf {
+    let root = get_root(config);
+    PathBuf::from_str(&root).expect("Root doesn't exist")
+}
+
+fn git_commit(config: &Config) {
+    let root = &get_root(config);
     let _stage_all = Command::new("git")
         .args(["-C", root, "add", "."])
         .spawn()
@@ -24,7 +44,23 @@ fn git_commit(_settings: &Option<Config>) {
         .spawn()
         .expect("failed to commit changes")
         .wait();
+}
 
+fn git_push(config: &Config, force: &bool) {
+    let root = &get_root(config);
+    if *force {
+        let _push = Command::new("git")
+            .args(["-C", root, "push", "--force"])
+            .spawn()
+            .expect("failed to push changes")
+            .wait();
+    } else {
+        let _push = Command::new("git")
+            .args(["-C", root, "push"])
+            .spawn()
+            .expect("failed to push changes")
+            .wait();
+    }
 }
 
 fn get_header(ns: Vec<String>) -> String {
@@ -32,9 +68,8 @@ fn get_header(ns: Vec<String>) -> String {
     format!("# {}", h)
 }
 
-fn open(_settings: &Option<Config>, ns: Vec<String>, header: Option<String>) {
-    // TODO: Root should come from config
-    let root = home_dir().unwrap().join("journal");
+fn open(config: &Config, ns: Vec<String>, header: Option<String>) {
+    let root = get_root_path(config);
     let (last, rest) = ns.split_last().expect("ns must be at least two deep");
     let dir_path = rest.iter().fold(root.clone(), |acc, e| acc.join(e));
     let file_path = dir_path.join(format!("{}.md", last));
@@ -68,28 +103,28 @@ fn open(_settings: &Option<Config>, ns: Vec<String>, header: Option<String>) {
         .args(["-c", ":set spell"])
         .args(["-c", ":set wrap"])
         .spawn()
-        .expect("failed to open today's note")
+        .expect("failed to open")
         .wait();
 }
 
-fn open_date(settings: &Option<Config>, year: i32, month: u32, day: u32) {
+fn open_date(config: &Config, year: i32, month: u32, day: u32) {
     let date = NaiveDate::from_ymd_opt(year, month, day)
         .expect("Not a valid date")
         .format("%A %e %B %Y");
     let header = format!("# {}", date);
     open(
-        settings,
+        config,
         vec![year.to_string(), month.to_string(), day.to_string()],
         Some(header),
     );
 }
 
-fn open_today(settings: &Option<Config>) {
+fn open_today(config: &Config) {
     let date = Local::now().date_naive();
     let year = date.year();
     let month = date.month();
     let day = date.day();
-    open_date(settings, year, month, day)
+    open_date(config, year, month, day)
 }
 
 #[derive(Parser)]
@@ -122,19 +157,30 @@ enum Commands {
     NS {
         ns: Vec<String>,
     },
+    Push {
+        force: bool,
+    },
 }
+
 fn main() {
-    let settings = Config::builder()
-        .add_source(config::File::with_name(".settings.toml"))
+    let base_directories = BaseDirectories::new();
+    let config_file = base_directories
+        .find_config_file(Path::new("jrnl/config.toml"))
+        .expect("No config found.  Please create %XDG_HOME/jrnl/config.toml");
+    let config = Config::builder()
+        .add_source(config::File::from(config_file))
+        .add_source(config::Environment::with_prefix("JRNL"))
         .build()
-        .ok();
+        .expect("Couldn't parse jrnl config file");
+
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Date { year, month, day }) => open_date(&settings, *year, *month, *day),
-        Some(Commands::NS { ns }) => open(&settings, ns.clone(), None),
-        None => open_today(&settings),
+        Some(Commands::Date { year, month, day }) => open_date(&config, *year, *month, *day),
+        Some(Commands::NS { ns }) => open(&config, ns.clone(), None),
+        Some(Commands::Push { force }) => git_push(&config, force),
+        None => open_today(&config),
     }
 
-    git_commit(&settings);
+    git_commit(&config);
 }
