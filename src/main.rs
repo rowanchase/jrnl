@@ -44,9 +44,9 @@ fn git_commit(config: &Config) {
         .wait();
 }
 
-fn git_push(config: &Config, force: &bool) {
+fn git_push(config: &Config, force: bool) {
     let root = &get_root(config);
-    if *force {
+    if force {
         let _push = Command::new("git")
             .args(["-C", root, "push", "--force"])
             .spawn()
@@ -156,7 +156,7 @@ enum Commands {
         ns: Vec<String>,
     },
     Push {
-        force: bool,
+        force: Option<bool>,
     },
 }
 
@@ -176,7 +176,7 @@ fn main() {
     match &cli.command {
         Some(Commands::Date { year, month, day }) => open_date(&config, *year, *month, *day),
         Some(Commands::NS { ns }) => open(&config, ns.clone(), None),
-        Some(Commands::Push { force }) => git_push(&config, force),
+        Some(Commands::Push { force }) => git_push(&config, force.unwrap_or(false)),
         None => open_today(&config),
     }
 
