@@ -3,7 +3,7 @@
 An embarrassingly simple note taking CLI tool.
 
 All this does is create and/or open a markdown file in your $EDITOR with a title header already populated.
-When you save and close the file it will commit and push.
+When you save and close the file it will commit it.
 That's it.
 
 ### NOTE
